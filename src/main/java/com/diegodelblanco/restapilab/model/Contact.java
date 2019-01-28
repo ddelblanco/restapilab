@@ -31,6 +31,10 @@ public class Contact {
         return id;
     }
 
+    public void setId(long id) {
+        this.id = id;
+    }
+
     public String getName() {
         return name;
     }
@@ -68,6 +72,43 @@ public class Contact {
     }
 
     public void setBirthDate(Date birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public Contact() {
+    }
+
+    public Contact(Contact contact) {
+        this.name = contact.getName();
+        this.surname = contact.getSurname();
+        this.email = contact.getEmail();
+        this.phone = contact.getPhone();
+        this.birthDate = contact.getBirthDate();
+    }
+
+    public Contact(Contact contact, long id) {
+        this.id = id;
+        this.name = contact.getName();
+        this.surname = contact.getSurname();
+        this.email = contact.getEmail();
+        this.phone = contact.getPhone();
+        this.birthDate = contact.getBirthDate();
+    }
+
+    public Contact(String name, String surname, String email, String phone, Date birthDate) {
+        this.name = name;
+        this.surname = surname;
+        this.email = email;
+        this.phone = phone;
+        this.birthDate = birthDate;
+    }
+
+    public Contact(long id, String name, String surname, String email, String phone, Date birthDate) {
+        this.id = id;
+        this.name = name;
+        this.surname = surname;
+        this.email = email;
+        this.phone = phone;
         this.birthDate = birthDate;
     }
 }

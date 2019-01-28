@@ -2,7 +2,9 @@ package com.diegodelblanco.restapilab.controller;
 
 import com.diegodelblanco.restapilab.model.Contact;
 import com.diegodelblanco.restapilab.repository.ContactRepository;
+import com.diegodelblanco.restapilab.resource.ContactResource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Link;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,14 +14,17 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.hateoas.Resources;
+import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping(value = "/api/v1", produces = "application/hal+json")
 public class ContactController {
     @Autowired
     private ContactRepository contactRepository;
@@ -30,21 +35,26 @@ public class ContactController {
      * @return a list of contacts
      */
     @GetMapping("/contacts")
-    public ResponseEntity<List<Contact>> getAllContacts() {
-        return ResponseEntity.ok().body(contactRepository.findAll());
+    public ResponseEntity<Resources<ContactResource>>  all() {
+        final List<ContactResource> collection =
+                contactRepository.findAll().stream().map(ContactResource::new).collect(Collectors.toList());
+        final Resources<ContactResource> resources = new Resources<>(collection);
+        final String uriString = ServletUriComponentsBuilder.fromCurrentRequest().build().toUriString();
+        resources.add(new Link(uriString, "self"));
+        return ResponseEntity.ok(resources);
     }
 
     /**
      * Gets a contact by his id.
      *
-     * @param contactId the user id
+     * @param id the user id
      * @return the contact if found
      */
     @GetMapping("/contacts/{id}")
-    public ResponseEntity<Contact> getUsersById(@PathVariable(value = "id") Long contactId) {
-        Optional<Contact> contact = contactRepository.findById(contactId);
+    public ResponseEntity<ContactResource> get(@PathVariable final long id) {
+        Optional<Contact> contact = contactRepository.findById(id);
         if (contact.isPresent()) {
-            return ResponseEntity.ok().body(contact.get());
+            return ResponseEntity.ok(new ContactResource(contact.get()));
         } else {
             return ResponseEntity.notFound().build();
         }
@@ -53,71 +63,54 @@ public class ContactController {
     /**
      * Create contact.
      *
-     * @param contact the contact
+     * @param contactFromRequest the contact
      * @return the contact
      */
     @PostMapping("/contacts")
-    public ResponseEntity<Contact> createContact(@Valid @RequestBody Contact contact) {
-        try {
-            final Contact newContact = contactRepository.save(contact);
-            URI uri = new URI("http://localhost:8080/api/v1/contacts/" + newContact.getId());
-            return ResponseEntity.created(uri).body(newContact);
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<ContactResource> post(@RequestBody final Contact contactFromRequest) {
+        final Contact contact = contactRepository.save(new Contact(contactFromRequest));
+        final URI uri =
+                MvcUriComponentsBuilder.fromController(getClass())
+                        .path("/{id}")
+                        .buildAndExpand(contact.getId())
+                        .toUri();
+        return ResponseEntity.created(uri).body(new ContactResource(contact));
     }
+
 
 
     /**
      * Update contact.
      *
-     * @param contactId the contact id
-     * @param contactData the information about the contact (a JSON object)
+     * @param id the contact id
+     * @param contactFromRequest the information about the contact (a JSON object)
      * @return a Response entity
      */
 
     @PutMapping("/contacts/{id}")
-    public ResponseEntity<Contact> updateContact(
-            @PathVariable(value = "id") Long contactId, @Valid @RequestBody  Contact contactData) {
-        Optional<Contact> contact =
-                contactRepository
-                        .findById(contactId);
-        if(contact.isPresent()) {
-            Contact contactTemp = contact.get();
-            contactTemp.setName(contactData.getName());
-            contactTemp.setSurname(contactData.getSurname());
-            contactTemp.setEmail(contactData.getEmail());
-            contactTemp.setPhone(contactData.getPhone());
-            contactTemp.setBirthDate(contactData.getBirthDate());
-
-            try {
-                final Contact newContact = contactRepository.save(contactTemp);
-                URI uri = new URI("http://localhost:8080/api/v1/contacts/" + newContact.getId());
-                return ResponseEntity.created(uri).body(newContact);
-            } catch (Exception ex) {
-                return ResponseEntity.badRequest().build();
-            }
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<ContactResource> put(
+            @PathVariable("id") final long id, @RequestBody Contact contactFromRequest) {
+        final Contact contact = new Contact(contactFromRequest, id);
+        contactRepository.save(contact);
+        final ContactResource resource = new ContactResource(contact);
+        final URI uri = ServletUriComponentsBuilder.fromCurrentRequest().build().toUri();
+        return ResponseEntity.created(uri).body(resource);
     }
 
     /**
      * Delete contact.
      *
-     * @param contactId the user id
+     * @param id the user id
      * @return the contact
-     * @throws Exception the exception
      */
     @DeleteMapping("/contacts/{id}")
-    public ResponseEntity<Contact> deleteContact(@PathVariable(value = "id") Long contactId) {
-        Optional<Contact> contact = contactRepository.findById(contactId);
+    public ResponseEntity<?> delete(@PathVariable("id") final long id) {
+        Optional<Contact> contact = contactRepository.findById(id);
         if (contact.isPresent()) {
-            contactRepository.delete(contact.get());
-            return ResponseEntity.ok().body(contact.get());
+            contactRepository.deleteById(id);
+            return ResponseEntity.noContent().build();
         } else {
             return ResponseEntity.notFound().build();
         }
-
     }
 }
