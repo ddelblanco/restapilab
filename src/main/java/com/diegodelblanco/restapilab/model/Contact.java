@@ -1,12 +1,17 @@
 package com.diegodelblanco.restapilab.model;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import java.util.Date;
+import java.util.List;
+
 import org.springframework.data.rest.core.annotation.RestResource;
 
 
@@ -28,6 +33,9 @@ public class Contact {
     private String phone;
     @Column(name = "birth_date")
     private Date birthDate;
+
+    @ManyToMany(mappedBy = "contacts")
+    private List<Meeting> meetings;
 
     public long getId() {
         return id;
@@ -77,6 +85,14 @@ public class Contact {
         this.birthDate = birthDate;
     }
 
+    public List<Meeting> getMeetings() {
+        return meetings;
+    }
+
+    public void setMeetings(List<Meeting> meetings) {
+        this.meetings = meetings;
+    }
+
     public Contact() {
     }
 
@@ -86,6 +102,7 @@ public class Contact {
         this.email = contact.getEmail();
         this.phone = contact.getPhone();
         this.birthDate = contact.getBirthDate();
+        this.meetings = contact.getMeetings();
     }
 
     public Contact(Contact contact, long id) {
@@ -95,22 +112,25 @@ public class Contact {
         this.email = contact.getEmail();
         this.phone = contact.getPhone();
         this.birthDate = contact.getBirthDate();
+        this.meetings = contact.getMeetings();
     }
 
-    public Contact(String name, String surname, String email, String phone, Date birthDate) {
+    public Contact(String name, String surname, String email, String phone, Date birthDate, List<Meeting> meetings) {
         this.name = name;
         this.surname = surname;
         this.email = email;
         this.phone = phone;
         this.birthDate = birthDate;
+        this.meetings = meetings;
     }
 
-    public Contact(long id, String name, String surname, String email, String phone, Date birthDate) {
+    public Contact(long id, String name, String surname, String email, String phone, Date birthDate, List<Meeting> meetings) {
         this.id = id;
         this.name = name;
         this.surname = surname;
         this.email = email;
         this.phone = phone;
         this.birthDate = birthDate;
+        this.meetings = meetings;
     }
 }
